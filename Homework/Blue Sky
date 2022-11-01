@@ -1,0 +1,55 @@
+import pygame
+import sys
+#from HW_Ship import Ship
+class BlueSky:
+    def __init__(self):
+        pygame.init()
+
+        self.screen = pygame.display.set_mode((1200,600))
+        self.bg_color = (230,230,230)
+        self.ship = Ship(self)
+    def run_game(self):
+        while True:
+            self._check_events()
+            self.ship.update()
+            self.screen.fill(self.bg_color)
+            self.ship.blitme()
+            pygame.display.flip()
+    def _check_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.ship.moving_up = True
+                elif event.key == pygame.K_DOWN:
+                    self.ship.moving_down = True
+
+
+
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    self.ship.moving_up = False
+                elif event.key == pygame.K_DOWN:
+                    self.ship.moving_down = False
+class Ship:
+    def __init__(self,bs_game):
+        self.screen = bs_game.screen
+        self.screen_rect = bs_game.screen.get_rect()
+        self.image = pygame.image.load('ship.bmp')
+        self.image = pygame.transform.rotate(self.image,270)
+        self.rect = self.image.get_rect()
+        self.rect.midleft = self.screen_rect.midleft
+        self.moving_up = False
+        self.moving_down = False
+    def update(self):
+        if self.moving_up and self.rect.top > 0:
+            self.rect.y -=1
+        if self.moving_down and self.rect.bottom < 600:
+            self.rect.y +=1
+    def blitme(self):
+        self.screen.blit(self.image,self.rect)
+
+if __name__ == '__main__':
+    BS = BlueSky()
+    BS.run_game()
