@@ -1,6 +1,7 @@
 import pygame
 import sys
 from pygame.sprite import Sprite
+from time import sleep
 #from HW_Ship import Ship
 class BlueSky:
     def __init__(self):
@@ -10,6 +11,12 @@ class BlueSky:
         self.bg_color = (230,230,230)
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
+        self.aliens = pygame.sprite.Group()
+        self.alien = Alien(self)
+        self._create_fleet()
+        self.ships_left = 3
+        self.score = 0
+        self.game_active = True
     def run_game(self):
         while True:
             self._check_events()
@@ -19,6 +26,8 @@ class BlueSky:
             self._update_bullets()
             for bullet in self.bullets.sprites():
                 bullet.draw_bullet()
+            self._update_aliens()
+            self.aliens.draw(self.screen)
             pygame.display.flip()
 
     def _check_events(self):
@@ -50,6 +59,75 @@ class BlueSky:
         for bullet in self.bullets.copy():
             if bullet.rect.right >= 1200:
                 self.bullets.remove(bullet)
+        self._check_bullet_alien_collisions()
+    def _check_bullet_alien_collisions(self):
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, False, True)
+        if not self.aliens:
+            self.bullets.empty()
+            self._create_fleet()
+            self.score += 1
+
+    def _create_fleet(self):
+        alien = Alien(self)
+        alien_width, alien_height = alien.rect.size
+        available_space_y = 600 - (2 * alien_height)
+        number_aliens_y = available_space_y // (2 * alien_height)
+
+        ship_width = self.ship.rect.width
+        available_space_x =(1200 - (3 * alien_width) - ship_width)
+        number_rows = available_space_x // (2 * alien_width)
+        for row_number in range(number_rows):
+            for alien_number in range(number_aliens_y):
+                self._create_alien(alien_number, row_number)
+
+    def _create_alien(self, alien_number, row_number):
+        alien = Alien(self)
+        alien_width, alien_height = alien.rect.size
+        alien.x = 800+ alien_width + 2 * alien_width * alien_number
+        alien.rect.x = alien.x
+        alien.rect.y = alien_height + 2 * alien.rect.height * row_number
+        self.aliens.add(alien)
+
+    def _check_fleet_edges(self):
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
+    def _change_fleet_direction(self):
+        alien = Alien(self)
+        for alien in self.aliens.sprites():
+            alien.rect.x += -50
+        alien.fleet_direction *= -1
+
+    def _update_aliens(self):
+        self._check_fleet_edges()
+        self.aliens.update()
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            self._ship_hit()
+        self._check_aliens_bottom()
+
+    def _ship_hit(self):
+        if self.ships_left > 0:
+            self.ships_left -= 1
+
+            self.aliens.empty()
+            self.bullets.empty()
+
+            self._create_fleet()
+
+
+            sleep(0.5)
+        else:
+            print(f" You cleared {self.score} waves of aliens!")
+            sys.exit()
+
+    def _check_aliens_bottom(self):
+        screen_rect = self.screen.get_rect()
+        for alien in self.aliens.sprites():
+            if alien.rect.left <= screen_rect.left:
+                self._ship_hit()
+                break
 
 class Ship:
     def __init__(self,bs_game):
@@ -86,6 +164,28 @@ class Bullet(Sprite):
         self.rect.x = self.x
     def draw_bullet(self):
         pygame.draw.rect(self.screen,self.color,self.rect)
+class Alien(Sprite):
+    """A class for a single alien in the fleet"""
+
+    def __init__(self,ai_game):
+        """initialize alien starting position"""
+        super().__init__()
+        self.screen = ai_game.screen
+        self.image = pygame.image.load('alien.jpg')
+        self.rect = self.image.get_rect()
+        self.rect.x = self.rect.width
+        self.rect.y = self.rect.height
+        self.y = float(self.rect.y)
+        self.x = float(self.rect.x)
+        self.fleet_direction = -1
+    def check_edges(self):
+        screen_rect = self.screen.get_rect()
+        if self.rect.bottom >= screen_rect.bottom or self.rect.top <= 0:
+            self.fleet_direction *= -1
+            self.rect.x -= 100
+    def update(self):
+        self.y += ((-1-(BS.score/10) ) * self.fleet_direction)
+        self.rect.y = self.y
 if __name__ == '__main__':
     BS = BlueSky()
     BS.run_game()

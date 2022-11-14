@@ -15,7 +15,9 @@ class Stars:
         while True:
             self._check_events()
             self.screen.fill(self.bg_color)
+            self._update_star()
             self.stars.draw(self.screen)
+
             pygame.display.flip()
 
     def _check_events(self):
@@ -43,6 +45,12 @@ class Stars:
         star.rect.x = star.x
         star.rect.y = alien_height+2*star.rect.height*row_number + randint(-20,20)
         self.stars.add(star)
+    def _update_star(self):
+        for star in self.stars:
+            if star.rect.bottom < 600:
+                star.rect.y += 1
+            else:
+                star.rect.bottom = 0
 
 
 class Star(Sprite):
